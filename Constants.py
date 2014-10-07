@@ -13,8 +13,8 @@ class Const(object):
     def __init__(self): 
         self.CSatMP = 1.16E-08            # CSat_MP: Initial value for solubility of dissolved iron at metal-passivation layer interface    g/cm^3
         self.CSatPO = 1.16E-07            # CSat_ PO: solubility of dissolved iron at passivation-oxide layer interface    g/cm^3
-        self.kd0 = 2.00E-01               # kd: Dissolution Rate Constant of Magnetite    cm/s
-        self.km0 = 2.0E-01               # km:  Static Mass Transfer Coefficient    cm/s 
+        self.kd0 = 2.00E-02              # kd: Dissolution Rate Constant of Magnetite    cm/s
+        self.km0 = 5.41E-01               # km:  Static Mass Transfer Coefficient    cm/s 
         self.f0 = 1.732050808             # f: Surface Area Factor (F* in thesis)    no unit
         self.S0 = 1.10E+00                # S: supersaturation factor of small crystallites  no unit  
         self.CB0 = 4.640E-8                 # CB: concentration of iron in bulk solution    g/cm^3
@@ -32,27 +32,27 @@ class Const(object):
         self.CPO0 = 1.16e-8#1.16E-07              # CPO: concentration at passivating-oxide interface    g/cm^3     
         self.DCORs0 = 0.0                 # DCORs: initial concentration at oxide bulk   
         self.DOXs0 = 0.0                 # DOXs: initial oxide layer thickness 
-        self.t0 = 200.0                   # t: time interval for simulation    seconds
+        self.t0 = 2000.0                   # t: time interval for simulation    seconds
         self.Tstep0 = 7000.0                # Tstep: number of steps    
         self.DP0 = 0.000273486            # DP: diffusivity of iron in passivating layer    cm^2/s
         self.CSatOB = 1.16E-7            # CSat_OB: Solubility of dissolved iron at oxide-bulk solution interface    g/cm^3    
         self.CeOB = 6.96e-8#1.0E-10              # Ce_OB: Concentration of dissolved iron at Oxide-Bulk interface    g/cm^3
-        self.CrContent0 = 0.019           # CrContent: Chromium Content    %
+        self.CrContent0 = 0.001#0.019           # CrContent: Chromium Content    %
         self.Paverage0 = 1.00E-06         # Paverage: minimum size of oxide particle    cm
         self.SDP0 = 1.00E-05              # SDP: maximum size of oxide particle    cm
         self.TS0 = 1.6                    # TS: Supersaturation factor  
         self.FF0 = 1.0                    # FF: Fricton Factor   
-        self.U0 = 2.5e2#188.9965                # U: Linear Velocity of Coolant    cm/s   
+        self.U0 = 9.51e2 #2.5e2#188.9965                # U: Linear Velocity of Coolant    cm/s   
         self.Tphi0 = 0.25                 # Tphi: porosity of oxide (for spalling calculation)  
         self.TKd0 = 0.2                   # TKd: dissolution rate constant (for spalling calculation)   
         self.TFSA0 = 1.7321               # TFSA: Surface Area Factor (F* in thesis)    
         self.TFeSAT0 = 1.16E-07           # TFeSAT: solubility of dissolved iron at oxide-bulk layer interface    
         self.Tfe0 = 0.00E+00              # Tfe: bulk iron concentration in solution
         self.RhoH2O0 = 0.92579            # RhoH2O: Density of Water    g/cm^3  
-        self.ksp0 = 8000.0              # Ksp: Spalling time constant   
+        self.ksp0 = 15000.0              # Ksp: Spalling time constant   
         self.Cell0 = 200.0                # Cell: Number of nodes
         self.Temperature0 = 140.0           # Temperature: Temperature    C    
-        self.ConcC4H9ONTotal0 = 0.0#0.000516  # ConcC4H9ONTotal: Morpholine concentration     mol/L   
+        self.ConcC4H9ONTotal0 = 0.000516  # ConcC4H9ONTotal: Morpholine concentration     mol/L   
         self.n0 = 2.0                     # n: number of electrons transferd in a reaction
         self.F0 = 96485.0                 # F: Faraday constant    C/mol (s.A/mol) 
         self.R0 = 8.314                   # R: Gas constant    j/mol.K
@@ -292,4 +292,4 @@ class Const(object):
             iH2_Hp_OB0 = self.iH2_Hp_OB0 
         return iH2_Hp_OB0  
     
-         
+    

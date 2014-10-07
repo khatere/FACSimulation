@@ -206,13 +206,13 @@ FeCr2O4 = 0
 DummyTime = t
 j = 0 
 spall = list()
-mu, sigma = 0.0, 50.0 # mean and standard deviation
+mu, sigma = 0.0, 70.0 # mean and standard deviation
 # ActivationEnergyValues = ActivationEnergyCal.ActivationEnergy(Ce_MP,CeH2_MP, Ce_OB, CeH2_OB, Temperature, ConcC4H9ONTotal)
 # ActivationEFe_Fe2_MP = ActivationEnergyValues.getActivationEnergyFe_Fe2_MP()
 # ActivationEH2_Hp_MP = ActivationEnergyValues.getActivationEnergyH2_Hp_MP()
 # ActivationEH2_Hp_OB = ActivationEnergyValues.getActivationEnergyH2_Hp_OB()
 # ActivationEFe2p_Fe3O4_OB = ActivationEnergyValues.getActivationEnergyFe2p_Fe3O4_OB()
-ActivationEFe_Fe2_MP = 464385.58
+ActivationEFe_Fe2_MP = 264385.58
 ActivationEH2_Hp_MP = 100502.6341
 ActivationEH2_Hp_OB = 377712.0#377712.0#132314.8545
 ActivationEFe2p_Fe3O4_OB = 291642.3046
@@ -250,18 +250,18 @@ def CorrosionRateFunction(Delta, CSat_MP, CSat_PO, CSat_OB, CB):
     EE = (0.476 * (1.101 + values.PhiOX()) * values.ChiOX() * Delta) /(values.PhiOX() * values.DFe() * values.RhoOX() * (1 - values.PhiOX()))
     FF = (0.476 * (1.101 + values.PhiOX())) / ((kd * values.f()) + values.km())
     DM = (AA - BB) / (CC - DD + EE + FF)
-    print AA,BB,CC,DD,EE,FF
+#     print AA,BB,CC,DD,EE,FF
     # DDelta = ((0.476 * DM * (1 - values.PhiOX())) - (Kd * F * (values.S() * CSat_OB - CB))) / 0.723 # variation in oxide thickness
     return  DM
  
 i=0
-while i < 20000:
+while i < 7000:
     x = rand.normalvariate(mu, sigma)
-    if x > 10.0:
+    if x > 10.0 and x < 120.0:
         spall.append(x)
         i = i+1
      
-for i in range(0,20000):
+for i in range(0,7000):
      
     DDeltaOX = (DDeltaFunction(Delta, CSat_MP, CSat_PO, CSat_OB, CB, Ce_OB, kd))
     DMOX = CorrosionRateFunction(Delta, CSat_MP, CSat_PO, CSat_OB, CB)
@@ -280,34 +280,38 @@ for i in range(0,20000):
         DeltaOX = 1.0e-5 
                  
     # Build up of Cr in oxide layer
-#     FeCrBuildUp =  ( 1 / 0.464) * DMOX * (CrContent / 100) * values.t()
-#     FeCr2O4 = FeCr2O4 + FeCrBuildUp 
-#     Fe3O4 = DeltaOX - FeCr2O4
-#     gFe_Fe3O4 = 0.77 * Fe3O4
-#     gFe_FeCr2O4 = 0.2495 * FeCr2O4
-#     gCr_FeCr2O4 = 0.464 * FeCr2O4
-#     PCr_Fe = (gCr_FeCr2O4 / (gFe_Fe3O4 + gFe_FeCr2O4)) 
+    FeCrBuildUp =  ( 1 / 0.464) * DMOX * (CrContent / 100) * values.t()
+    FeCr2O4 = FeCr2O4 + FeCrBuildUp 
+    Fe3O4 = DeltaOX - FeCr2O4
+    gFe_Fe3O4 = 0.77 * Fe3O4
+    gFe_FeCr2O4 = 0.2495 * FeCr2O4
+    gCr_FeCr2O4 = 0.464 * FeCr2O4
+    PCr_Fe = (gCr_FeCr2O4 / (gFe_Fe3O4 + gFe_FeCr2O4)) 
 #     CSat_PO =  PCr_Fe  * CSat_Cr + (1 - PCr_Fe ) * CSat_PO
     #print  PCr_Fe, CSat_PO
     #Erosion effect
     ParticleDiameter = float(spall[j])
+#     while ParticleDiameter > 100:
+#       j = j+1
+#       ParticleDiameter = float(spall[j])
+        
     SpallingTime = 1*ksp * math.pow(ParticleDiameter * 1e-7,1) / (FF * math.pow(U,2) * values.PhiOX() * kd * values.f() * (values.S() * CSat_OB - Ce_OB))
      
 #     SpallingTime = ksp * math.pow(ParticleDiameter * 1e-7,2) / (FF * math.pow(U,2) * values.PhiOX() * .2 * values.f() * (values.S() * 1.16e-7 ))
      
-    if (DummyTime > SpallingTime and ParticleDiameter * 1e-7 * values.RhoOX() < (DeltaOX / 4) ):
+    if (DummyTime > SpallingTime and ParticleDiameter * 1e-7 * values.RhoOX() < (DeltaOX / 2)):
         DeltaOX = DeltaOX - ParticleDiameter * 1e-7 * values.RhoOX() 
         DummyTime = values.t()
         j = j + 1
-#         FeCr2O4removed = (FeCr2O4 / DeltaOX) * (ParticleDiameter * 1e-7 * values.RhoOX())
-#         FeCr2O4 = FeCr2O4 - FeCr2O4removed
-#         Fe3O4 = DeltaOX - FeCr2O4
-#         gFe_Fe3O4 = 0.77 * Fe3O4
-#         gFe_FeCr2O4 = 0.2495 * FeCr2O4
-#         gCr_FeCr2O4 = 0.464 * FeCr2O4
-#         PCr_Fe = (gCr_FeCr2O4 / (gFe_Fe3O4 + gFe_FeCr2O4)) 
+        FeCr2O4removed = (FeCr2O4 / DeltaOX) * (ParticleDiameter * 1e-7 * values.RhoOX())
+        FeCr2O4 = FeCr2O4 - FeCr2O4removed
+        Fe3O4 = DeltaOX - FeCr2O4
+        gFe_Fe3O4 = 0.77 * Fe3O4
+        gFe_FeCr2O4 = 0.2495 * FeCr2O4
+        gCr_FeCr2O4 = 0.464 * FeCr2O4
+        PCr_Fe = (gCr_FeCr2O4 / (gFe_Fe3O4 + gFe_FeCr2O4)) 
 #         CSat_PO =  PCr_Fe * CSat_Cr + (1 - PCr_Fe ) * CSat_PO
-#         CrConc = 0.464 * FeCr2O4 / (DeltaOX / 5.2)
+        CrConc = 0.464 * FeCr2O4 / (DeltaOX / 5.2)
 
     else:
         DummyTime = DummyTime + t    
@@ -353,7 +357,7 @@ plt.xlabel('Day')
 plt.ylabel('corrosion rate (mm/year)')
 plt.show()
 
-# mu, sigma = 0.0, 200.0
+# mu, sigma = 0.0, 70.0
 # spall =list()
 # i=0
 # while i < 20000:
@@ -364,4 +368,16 @@ plt.show()
 # count, bins, ignored = plt.hist(spall, 20)
 # # plt.plot(bins, 1/(sigma * np.sqrt(2 * np.pi)) * np.exp( - (bins - mu)**2 / (2 * sigma**2) ), linewidth=2, color='r')
 # plt.show()
-        
+# dirName = '\Users\Khatere\Documents\sampython'
+# fileName = 'randomdata.dat'
+# 
+# if not os.path.exists(dirName):
+#     os.makedirs(dirName)
+#     
+# dataList = list()
+# [dataList.append([Thickness[i], Time[i]]) for i in range(len(Thickness))]
+# print dataList
+# with open(os.path.join(dirName, fileName),'w') as csvfile:
+#     writer = csv.writer(csvfile, delimiter = ',')
+#     writer.writerow(['Thickness', 'Time'])
+#     writer.writerows(dataList)

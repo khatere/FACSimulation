@@ -32,7 +32,7 @@ class Concentrations(object):
         kHenry = gibbsValues.getH2HenryConstant()
 #         PHvalue = PHCalculator.equilibriumConstants(self.Temperature, self.ConcC4H9ONTotal)
 #         pH = PHvalue.PHCalculation() 
-        pH = 6.5 # for now not using the PHCalculator function
+        pH = 6.88 # for now not using the PHCalculator function
         CeHp = math.pow (10, -pH)
         
         #pH = 9.58

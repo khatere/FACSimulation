@@ -45,12 +45,12 @@ mu, sigma = 0.0, 100.0 # mean and standard deviation
 # ActivationEH2_Hp_MP = ActivationEnergyValues.getActivationEnergyH2_Hp_MP()
 # ActivationEH2_Hp_OB = ActivationEnergyValues.getActivationEnergyH2_Hp_OB()
 # ActivationEFe2p_Fe3O4_OB = ActivationEnergyValues.getActivationEnergyFe2p_Fe3O4_OB()
-ActivationEFe_Fe2_MP = 190600.0#264385.58
-ActivationEH2_Hp_MP = 150000.0#100502.6341
-ActivationEH2_Hp_OB = 210000.0#377712.0#377712.0#132314.8545
-ActivationEFe2p_Fe3O4_OB = 190000.0#291642.3046
-ActivationEFe2p_Fe3O4_OP = 178000.0
-ActivationEH2_Hp_OP = 185000.0
+ActivationEFe_Fe2_MP = 180600.0#264385.58
+ActivationEH2_Hp_MP = 160000.0#100502.6341
+ActivationEH2_Hp_OB = 220000#210000.0#377712.0#377712.0#132314.8545
+ActivationEFe2p_Fe3O4_OB = 200000#191000.0#291642.3046
+ActivationEFe2p_Fe3O4_OP = 175000.0
+ActivationEH2_Hp_OP = 183000.0
 # PHvalue = PHCalculator.equilibriumConstants(Temperature, ConcC4H9ONTotal)
 # pH = PHvalue.PHCalculation() 
 pH = 5.88  
@@ -89,7 +89,7 @@ def CorrosionRateFunction(Delta, Ce_MP, CSat_OB, CB):
     EE = (0.476 * (1.101 + values.PhiOX()) * values.ChiOX() * Delta) /(values.PhiOX() * values.DFe() * values.RhoOX() * (1 - values.PhiOX()))
     FF = (0.476 * (1.101 + values.PhiOX())) / ((kd * values.f()) + values.km())
     DM = (AA - BB) / ( DD + EE + FF)
-#     print AA,BB,DD,EE,FF
+    print AA,BB,DD,EE,FF
     # DDelta = ((0.476 * DM * (1 - values.PhiOX())) - (Kd * F * (values.S() * CSat_OB - CB))) / 0.723 # variation in oxide thickness
     return  DM
   
@@ -106,7 +106,8 @@ for i in range(0,7000):
 #     print DeltaOX, SpallingTime, ParticleDiameter * 1e-7 * values.RhoOX(), DeltaOX/2  
 #     SpallingTime = ksp * math.pow(ParticleDiameter * 1e-7,2) / (FF * math.pow(U,2) * values.PhiOX() * .2 * values.f() * (values.S() * 1.16e-7 ))
       
-    if (DummyTime > SpallingTime and ParticleDiameter * 1e-7 * values.RhoOX() < (DeltaOX/2 )):
+    
+    if (DummyTime > SpallingTime and ParticleDiameter * 1e-7 * values.RhoOX() < (DeltaOX/2)):
         DeltaOX = DeltaOX - ParticleDiameter * 1e-7 * values.RhoOX() 
         DummyTime = values.t()
         j = j + 1

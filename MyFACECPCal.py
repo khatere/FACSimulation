@@ -31,17 +31,14 @@ class Concentrations(object):
     def ConcentrationsCalculator(self,  DeltaOX = None, DMOX= None, Ce_MP = None, Ce_OP = None, Ce_OB = None, pH = None):
         gibbsValues = GibbsEnergyClass.gibbs(self.Temperature)
         DeltaGFe_Fe2_MP = gibbsValues.getDeltaGFe_Fe2()
-        DeltaGFe2p_Fe3O4_OP = 60.0#gibbsValues.getDeltaGFe2p_Fe304()
-        DeltaGFe2p_Fe3O4_OB = 60.0#gibbsValues.getDeltaGFe2p_Fe304()
+        DeltaGFe2p_Fe3O4_OP = 80.0#gibbsValues.getDeltaGFe2p_Fe304() *.33 #( for one mole of Fe(OH)3 instead of 3)
+        DeltaGFe2p_Fe3O4_OB = 80.0#gibbsValues.getDeltaGFe2p_Fe304()* .33
         DeltaGH2_Hp_OP = gibbsValues.getDeltaGfH2_Hp()
         DeltaGH2_Hp_OB = gibbsValues.getDeltaGfH2_Hp()
         DeltaGH2_Hp_MP = gibbsValues.getDeltaGfH2_Hp()
         kHenry = gibbsValues.getH2HenryConstant()
        
-#         pH = 6.88 # for now not using the PHCalculator function
-       
-        
-        #pH = 9.58
+
         value = Constants.Const()
         n = value.n()
         F = value.F()                 
@@ -103,36 +100,37 @@ class Concentrations(object):
         
         CeH2_MP = CH2coolant + (0.005659 * Corrosionrate * (7.32 - PhiOX) *(1 / AOX + 1 / hH2)) + 3.58e-2 *Corrosionrate / AP
         CeH2_OP = CH2coolant + (0.005659 * Corrosionrate * (7.32 - PhiOX) *(1 / AOX + 1 / hH2))
+       
         # H2 concentration at O_B interface
-        
         CeH2_OB = CH2coolant + (0.005659 *  Corrosionrate * (7.32 - PhiOX) / hH2)
-#         print DeltaOX,CeH2_MP,CeH2_OP,CeH2_OB
+
         #Dissolution of magnetite at O_B interface Fe3O4 + 2H2O + 2H+ + 2e- = 3 Fe(OH)2 
+        nFe2p_Fe3O4_OB = 2.0
+        EeFe2p_Fe3O4_OB = -1 *  DeltaGFe2p_Fe3O4_OB * 1000/ (nFe2p_Fe3O4_OB * F) - math.log(10) * 2 * R * TKelvin / (nFe2p_Fe3O4_OB * F) * pH - 3 * R * TKelvin / (nFe2p_Fe3O4_OB * F) * math.log(Ce_OB * 1000 / 90.0) # Equilibrium potential for dissolution reaction at O_B interface
+        i0Fe2p_Fe3O4_OB = F * kboltzman * TKelvin / h * (math.exp(-1 * self.ActivationEFe2p_Fe3O4_OB  / (R * TKelvin )) * math.pow(Ce_OB * 1000 / 90.0, 1.0)*  math.exp(-1 * Beta * nFe2p_Fe3O4_OB * F * EeFe2p_Fe3O4_OB / (R * TKelvin)));
+
         
-        EeFe2p_Fe3O4_OB = -1 * DeltaGFe2p_Fe3O4_OB * 1000/ (n * F) - math.log(10) * 2 * R * TKelvin / (n * F) * pH - 3 * R * TKelvin / (n * F) * math.log(Ce_OB * 1000 / 90.0) # Equilibrium potential for dissolution reaction at O_B interface
-        i0Fe2p_Fe3O4_OB = F * kboltzman * TKelvin / h * (math.exp(-1 * self.ActivationEFe2p_Fe3O4_OB  / (R * TKelvin )) * math.pow(Ce_OB * 1000 / 90.0, 1.0)*  math.exp(-1 * Beta * n * F * EeFe2p_Fe3O4_OB / (R * TKelvin)));
-#         print DeltaGFe2p_Fe3O4_OB, Ce_OB
+        #Hydrogen consumption at O_B interface 2H+ + 2e- =  H2 
+
+        nH2_Hp_OB = 2.0
+        EeH2_Hp_OB = -1 * DeltaGH2_Hp_OB * 1000 / (nH2_Hp_OB * F ) - math.log(10) * 2 * R * TKelvin * pH / (nH2_Hp_OB * F)  - R * TKelvin / (nH2_Hp_OB * F) * math.log((CeH2_OB * 1000 / 2.0 )) # At O_B interface
         
-#Hydrogen consumption at O_B interface 2H+ + 2e- =  H2 
-#Standard DeltaGH2_Hp is zero at any temperature
+        i0H2_Hp_OB = F * kboltzman * TKelvin / h * math.exp(-1 * self.ActivationEH2_Hp_OB / (R * TKelvin)) * math.pow(CeH2_OB * 1000 / H2MolarMass  , 1.0) * math.exp(-1 * Beta * nH2_Hp_OB * F * EeH2_Hp_OB/(R * TKelvin));
         
-        EeH2_Hp_OB = -1 * DeltaGH2_Hp_OB * 1000 / (n * F ) - math.log(10) * 2 * R * TKelvin * pH / (n * F)  - R * TKelvin / (n * F) * math.log((CeH2_OB )) # At O_B interface
+        # Mixed Potential at the O_B interface
+        i0_H1= i0H2_Hp_OB * math.exp(Beta * nH2_Hp_OB * F * EeH2_Hp_OB / (R * TKelvin))
+        i0_H2 = i0H2_Hp_OB * math.exp(-1 * (1 - Beta) * nH2_Hp_OB * F * EeH2_Hp_OB / (R * TKelvin))
+        i0_Fe1 = i0Fe2p_Fe3O4_OB * math.exp(Beta * nFe2p_Fe3O4_OB * F * EeFe2p_Fe3O4_OB / (R * TKelvin))
+        i0_Fe2 = i0Fe2p_Fe3O4_OB * math.exp(-1 * (1 - Beta) * nFe2p_Fe3O4_OB * F * EeFe2p_Fe3O4_OB / (R * TKelvin))                                                         
         
-        i0H2_Hp_OB = F * kboltzman * TKelvin / h * math.exp(-1 * self.ActivationEH2_Hp_OB / (R * TKelvin)) * math.pow(CeH2_OB * 1000 / H2MolarMass  , 1.0) * math.exp(-1 * Beta * n * F * EeH2_Hp_OB/(R * TKelvin));
-        
-# Mixed Potential at the O_B interface
-        i0_H1= i0H2_Hp_OB * math.exp(Beta * n * F * EeH2_Hp_OB / (R * TKelvin))
-        i0_H2 = i0H2_Hp_OB * math.exp(-1 * (1 - Beta) * n * F * EeH2_Hp_OB / (R * TKelvin))
-        i0_Fe1 = i0Fe2p_Fe3O4_OB * math.exp(Beta * n * F * EeFe2p_Fe3O4_OB / (R * TKelvin))
-        i0_Fe2 = i0Fe2p_Fe3O4_OB * math.exp(-1 * (1 - Beta) * n * F * EeFe2p_Fe3O4_OB / (R * TKelvin))                                                         
         #just for Beta = 0.5
-        Emixed = R * TKelvin  / ( n * F * Beta * 2) * math.log((i0_H1 + i0_Fe1) / (i0_H2 + i0_Fe2))
-        print EeFe2p_Fe3O4_OB,i0Fe2p_Fe3O4_OB,EeH2_Hp_OB,i0H2_Hp_OB, Emixed,Corrosionrate
+        Emixed = R * TKelvin  / ( nFe2p_Fe3O4_OB * F * Beta * 2) * math.log((i0_H1 + i0_Fe1) / (i0_H2 + i0_Fe2))
+#         print EeFe2p_Fe3O4_OB,i0Fe2p_Fe3O4_OB,EeH2_Hp_OB,i0H2_Hp_OB, Emixed,Corrosionrate
 #Adjusting the concentration of iron species at O_B interface (in mol/l should be calculated back to g/cm^3)
-        CSat_OBNew = (math.exp((Emixed + DeltaGFe2p_Fe3O4_OB * 1000/ (n * F) + 2 * R * TKelvin * math.log(10) * pH / (n * F)) * (-1) * n * F / (3 * R * TKelvin)))* 90 / 1000
+        CSat_OBNew = (math.exp((Emixed + DeltaGFe2p_Fe3O4_OB * 1000/ (nFe2p_Fe3O4_OB * F) + 2 * R * TKelvin * math.log(10) * pH / (nFe2p_Fe3O4_OB * F)) * (-1) * nFe2p_Fe3O4_OB * F / (3 * R * TKelvin)))* 90 / 1000
 #         print CSat_OBNew
 #Adjusting the dissolution rate constant of magnetite
-        ked_OB = kd_OB * math.exp(-1 * (1 - Beta) * n * F * (Emixed - EeFe2p_Fe3O4_OB) / (R * TKelvin))  
+        ked_OB = kd_OB * math.exp(-1 * (1 - Beta) * nFe2p_Fe3O4_OB * F * (Emixed - EeFe2p_Fe3O4_OB) / (R * TKelvin))  
         
 
 #         # Fe concentration at M_P interface
@@ -144,29 +142,30 @@ class Concentrations(object):
         # At O_P interface
         #Precipitation of magnetite at O_P interface   Fe3O4 + 2H2O + 2H+ + 2e- = 3Fe(OH)2 
         # R * 6 is due to the fact that the n=1/3 in these equation instead of 2
-        EeFe2p_Fe3O4_OP = -1 * DeltaGFe2p_Fe3O4_OP * 1000 / (n * F ) - math.log(10) * 2 * R * TKelvin / (n * F) * pH - 3 * R * TKelvin / (n * F) * math.log(Ce_OP * 1000 / FeMolarMass)
-        i0Fe2p_Fe3O4_OP = F * kboltzman * TKelvin / h * (math.exp(-1 * self.ActivationEFe2p_Fe3O4_OP  / (R * TKelvin )) * math.pow(Ce_OP * 1000 / 90.0, 1.0)*  math.exp(-1 * Beta * n * F * EeFe2p_Fe3O4_OP / (6 * R * TKelvin)));
+        nFe2p_Fe3O4_OP = .33 #1/3
+        EeFe2p_Fe3O4_OP = -1 *  DeltaGFe2p_Fe3O4_OP * 1000 / (2 * F) - math.log(10) * R * TKelvin /(F) * pH - 3 * R * TKelvin / (2 * F) * math.log(Ce_OP * 1000 / FeMolarMass)
+        i0Fe2p_Fe3O4_OP = F * kboltzman * TKelvin / h * (math.exp(-1 * self.ActivationEFe2p_Fe3O4_OP  / (R * TKelvin )) * math.pow(Ce_OP * 1000 / 90.0, 1.0)*  math.exp(-1 * Beta * nFe2p_Fe3O4_OP * F * EeFe2p_Fe3O4_OP / ( R * TKelvin)));
         
         #Hydrogen production 2H+ + 2e- = H2 at O_P; 
-               
-        EeH2_Hp_OP = -1 * DeltaGH2_Hp_OP * 1000 / (n * F ) - math.log(10) * 2 * R * TKelvin * pH / (n * F)  - R * TKelvin / (n * F) * math.log((CeH2_OP )) # At M_P interface, CH2_MP converted to mol/l, g/cm^3 * 1000/Molar mass H2 and then to atm: mol/l/KHenry(mol/l.atm) => atm
+        nH2_Hp_OP = .33 #1/3        
+        EeH2_Hp_OP = -1 * DeltaGH2_Hp_OP * 1000 / (2 * F ) - math.log(10) *  R * TKelvin * pH / ( F)  - R * TKelvin / (2 * F) * math.log((CeH2_OP* 1000 / 2.0 )) 
         
-        i0H2_Hp_OP = F * kboltzman * TKelvin / h * (math.exp(-1 * self.ActivationEH2_Hp_OP / (R * TKelvin)) *  math.pow(CeH2_OP * 1000  / H2MolarMass , 1.0) * math.exp(-1 * Beta * n * F * EeH2_Hp_OP / (6 * R * TKelvin)))
+        i0H2_Hp_OP = F * kboltzman * TKelvin / h * (math.exp(-1 * self.ActivationEH2_Hp_OP / (R * TKelvin)) *  math.pow(CeH2_OP * 1000  / H2MolarMass , 1.0) * math.exp(-1 * Beta * nH2_Hp_OP * F * EeH2_Hp_OP / (R * TKelvin)))
         
        # Mixed Potential at the O_P interface
-        i0_H1OP= i0H2_Hp_OP * math.exp(Beta * n * F * EeH2_Hp_OP / (6 * R * TKelvin))
-        i0_H2OP = i0H2_Hp_OP * math.exp(-1 * (1 - Beta) * n * F * EeH2_Hp_OP / (6 * R * TKelvin))
-        i0_Fe1OP = i0Fe2p_Fe3O4_OP * math.exp(Beta * n * F * EeFe2p_Fe3O4_OP / (6 * R * TKelvin))
-        i0_Fe2OP = i0Fe2p_Fe3O4_OP * math.exp(-1 * (1 - Beta) * n * F * EeFe2p_Fe3O4_OP / (6 * R * TKelvin))                                                         
+        i0_H1OP= i0H2_Hp_OP * math.exp(Beta * nH2_Hp_OP * F * EeH2_Hp_OP / ( R * TKelvin))
+        i0_H2OP = i0H2_Hp_OP * math.exp(-1 * (1 - Beta) * nH2_Hp_OP * F * EeH2_Hp_OP / ( R * TKelvin))
+        i0_Fe1OP = i0Fe2p_Fe3O4_OP * math.exp(Beta * nFe2p_Fe3O4_OP * F * EeFe2p_Fe3O4_OP / ( R * TKelvin))
+        i0_Fe2OP = i0Fe2p_Fe3O4_OP * math.exp(-1 * (1 - Beta) * nFe2p_Fe3O4_OP * F * EeFe2p_Fe3O4_OP / ( R * TKelvin))                                                         
         #just for Beta = 0.5
-        EmixedOP = 6 * R * TKelvin  / ( n * F * Beta * 2) * math.log((i0_H1OP + i0_Fe1OP) / (i0_H2OP + i0_Fe2OP))
+        EmixedOP =  R * TKelvin  / ( nFe2p_Fe3O4_OP * F * Beta * 2) * math.log((i0_H1OP + i0_Fe1OP) / (i0_H2OP + i0_Fe2OP))
         #Adjusting the dissolution rate constant of magnetite
-        ked_OP = kd_OP * math.exp(-1 * (1 - Beta) * n * F * (EmixedOP - EeFe2p_Fe3O4_OP) / (6 * R * TKelvin))
+        ked_OP = kd_OP * math.exp(-1 * (1 - Beta) * nFe2p_Fe3O4_OP * F * (EmixedOP - EeFe2p_Fe3O4_OP) / ( R * TKelvin))
         #Adjusting the concentration of iron species at O_P interface (in mol/l should be calculated back to g/cm^3)
-        CSat_OPNew = (math.exp((EmixedOP + DeltaGFe2p_Fe3O4_OP * 1000/ (n * F) + 2 * R * TKelvin * math.log(10) * pH / (n * F)) * (-1) * n * F / (3 * R * TKelvin)))* 90 / 1000
+        CSat_OPNew = (math.exp((EmixedOP + DeltaGFe2p_Fe3O4_OP * 1000/ (2 * F) +  R * TKelvin * math.log(10) * pH / ( F)) * (-1) * 2 * F / (3 * R * TKelvin)))* 90 / 1000
         Ce_OPNew = CSat_OPNew + (0.476* (1-PhiOX)*Corrosionrate / ked_OP) * 90 / 1000
         Ce_MPNew = (Corrosionrate*(value.ChiP() * value.DeltaP()) /(value.PhiP() * value.DP() * value.RhoP() * (1 - value.PhiP())) + Ce_OPNew *1000/90)*56/1000
-        print EeFe2p_Fe3O4_OP,i0Fe2p_Fe3O4_OP,EeH2_Hp_OP,i0H2_Hp_OP, EmixedOP,Ce_MPNew,Ce_OP
+#         print EeFe2p_Fe3O4_OP,i0Fe2p_Fe3O4_OP,EeH2_Hp_OP,i0H2_Hp_OP, EmixedOP,Ce_MPNew,Ce_OP
 #         # At M-P interface
 # 
 #         EeFe_Fe2p_MP = -1 * DeltaGFe_Fe2_MP * 1000 / (n * F) - math.log(10) * 2 * R * TKelvin * pH / (n * F)  + R * TKelvin / (n * F) * math.log(Ce_MP * 1000 / FeMolarMass) # Equilibrium potential for the oxidation reaction at M_P interface, concentration unit changed from g/cm^3 to mol/L 
@@ -176,16 +175,16 @@ class Concentrations(object):
 #Precipitation of magnetite at M_P interface   Fe3O4 + 2H2O + 2H+ + 2e- = 3Fe(OH)2 
         
 #       EeFe2p_Fe3O4_MP = -1 * DeltaGFe2p_Fe3O4_MP * 1000 / (n * F ) - math.log(10) * 2 * R * TKelvin / (n * F) * pH - 3 * R * TKelvin / (n * F) * math.log(Ce_MP * 1000 / FeMolarMass);
-        
-        EeFe_Fe2p_MP = -1 * DeltaGFe_Fe2_MP* 1000 / (n * F) - math.log(10) * 2 * R * TKelvin / (n * F) * pH + R * TKelvin / (n * F) * math.log(Ce_MPNew * 1000 / FeMolarMass) # Equilibrium potential for the oxidation reaction at M_P interface
+        nFe_Fe2p_MP = 2
+        EeFe_Fe2p_MP = -1 * DeltaGFe_Fe2_MP* 1000 / (nFe_Fe2p_MP * F) - math.log(10) * 2 * R * TKelvin / (nFe_Fe2p_MP * F) * pH + R * TKelvin / (nFe_Fe2p_MP * F) * math.log(Ce_MPNew * 1000 / FeMolarMass) # Equilibrium potential for the oxidation reaction at M_P interface
         #in i0 equationsthe unit of concentration should be mol/cm^3 according to Dr. Cookthesis and Olga program ( the power 2/3 is not clear and the units does not match the A/cm^2 )  but according to Lisa Lang program Concentration in mol/lit should be multiplied by diameter of pipe/4 (cm). This would make sense in terms of units. I tried all the variations and they make insignificant changes in the results
-        i0Fe_Fe2p_MP = F * kboltzman * TKelvin / h * (math.exp(-1 * self.ActivationEFe_Fe2_MP  / (R * TKelvin)) * math.pow(Ce_MPNew * 1000 / FeMolarMass,1.0) * math.exp(-1 * Beta * n * F * EeFe_Fe2p_MP / (R * TKelvin)));
+        i0Fe_Fe2p_MP = F * kboltzman * TKelvin / h * (math.exp(-1 * self.ActivationEFe_Fe2_MP  / (R * TKelvin)) * math.pow(Ce_MPNew * 1000 / FeMolarMass,1.0) * math.exp(-1 * Beta * nFe_Fe2p_MP * F * EeFe_Fe2p_MP / (R * TKelvin)));
         
         #Hydrogen production 2H+ + 2e- = H2 at M_P; 
-               
-        EeH2_Hp_MP = -1 * DeltaGH2_Hp_MP * 1000 / (n * F ) - math.log(10) * 2 * R * TKelvin * pH / (n * F)  - R * TKelvin / (n * F) * math.log((CeH2_MP )) # At M_P interface, CH2_MP converted to mol/l, g/cm^3 * 1000/Molar mass H2 and then to atm: mol/l/KHenry(mol/l.atm) => atm
+        nH2_Hp_MP = 2        
+        EeH2_Hp_MP = -1 * DeltaGH2_Hp_MP * 1000 / (nH2_Hp_MP * F ) - math.log(10) * 2 * R * TKelvin * pH / (nH2_Hp_MP * F)  - R * TKelvin / (nH2_Hp_MP * F) * math.log((CeH2_MP* 1000 / 2.0 )) # At M_P interface, CH2_MP converted to mol/l, g/cm^3 * 1000/Molar mass H2 and then to atm: mol/l/KHenry(mol/l.atm) => atm
         
-        i0H2_Hp_MP = F * kboltzman * TKelvin / h * (math.exp(-1 * self.ActivationEH2_Hp_MP / (R * TKelvin)) *  math.pow(CeH2_MP * 1000  / H2MolarMass , 1.0) * math.exp(-1 * Beta * n * F * EeH2_Hp_MP / (R * TKelvin)))
+        i0H2_Hp_MP = F * kboltzman * TKelvin / h * (math.exp(-1 * self.ActivationEH2_Hp_MP / (R * TKelvin)) *  math.pow(CeH2_MP * 1000  / H2MolarMass , 1.0) * math.exp(-1 * Beta * nH2_Hp_MP * F * EeH2_Hp_MP / (R * TKelvin)))
         
         
 
@@ -206,18 +205,18 @@ class Concentrations(object):
 #         print C1+C2, A1*C3, C2, C3*C4
 
         
-        if X1 > 0: 
-            Ecorr = math.log(X1) / C1 + EeFe_Fe2p_MP
-        elif X2 > 0:
+        if X2 > 0: 
             Ecorr = math.log(X2) / C1 + EeFe_Fe2p_MP
+        elif X1 > 0:
+            Ecorr = math.log(X1) / C1 + EeFe_Fe2p_MP
         else:
             print ('error')
         if (X1 > 0 and X2 > 0):
-            Ecorr = math.log(X2) / C1 + EeFe_Fe2p_MP 
+            Ecorr = math.log(X1) / C1 + EeFe_Fe2p_MP 
             
-          
+         
 #         print A1,C1, C2, X1, X2, Ecorr, Emixed,
-        print EeFe_Fe2p_MP,i0Fe_Fe2p_MP,EeH2_Hp_MP,i0H2_Hp_MP,Ecorr
+#         print EeFe_Fe2p_MP,i0Fe_Fe2p_MP,EeH2_Hp_MP,i0H2_Hp_MP,Ecorr
         
 
 # Current calculations at M_P interface
@@ -234,14 +233,6 @@ class Concentrations(object):
 # Current calculations at O_B interface
 # iFe3O4_Fe2p_OB = i0Fe2p_Fe3O4_OB * (math.exp(Beta * n * F / (R * TKelvin) * (EeFe2p_Fe3O4_OB - Emixed)) - math.exp(-1 * (1 - Beta) * n * F / (R * TKelvin) * (EeFe2p_Fe3O4_OB - Emixed)));
 # iH2_Hp_OB = i0H2_Hp_OB * (math.exp(Beta * n * F / (R * TKelvin) * (Emixed - EeH2_Hp_OB)) - math.exp(-1 * (1 - Beta) * n * F / (R * TKelvin) * (Emixed - EeH2_Hp_OB)));
-        
-        
-
-         
-    
-
-
-        
         
         
         return CSat_MPNew, CSat_OPNew, CSat_OBNew, ked_OB, ked_OP, Emixed, EmixedOP, Ecorr, CeH2_MP, CeH2_OP, CeH2_OB, Corrosionrate,Ce_MPNew,Ce_OPNew    
